@@ -1,0 +1,207 @@
+<?
+require_once "inc/config.php"; 
+require_once "inc/mysql.inc.php"; 
+require_once "inc/paging.inc.php"; 
+require_once "inc/lib.inc.php"; 
+require_once "inc/totalSearch.inc.php"; 
+include "inc/session.php";
+
+
+$db = new Mysql();
+$totalSearch = new TotalSearch($db); 
+
+
+$computerInfo = $totalSearch->getTotalSearch();
+?>
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+	<title>컴퓨터 관리</title>
+
+	 <!-- Bootstrap CSS CDN -->
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+	<!-- Bootstrap Dropdown select -->
+	<link rel="stylesheet" href="css/bootstrap-select.min.css">
+	<script src="css/bootstrap-select.min.js"></script>
+	<script src="css/bootstrap-select.js" defer></script>
+	<!-- Our Custom CSS -->
+	<link rel="stylesheet" href="css/style.css" />
+	
+	<!--formden.js communicates with FormDen server to validate fields and submit via AJAX -->
+	<script type="text/javascript" src="https://formden.com/static/cdn/formden.js"></script>
+
+	<!-- Special version of Bootstrap that is isolated to content wrapped in .bootstrap-iso -->
+	<link rel="stylesheet" href="https://formden.com/static/cdn/bootstrap-iso.css" />
+
+	<!--Font Awesome (added because you use icons in your prepend/append)-->
+	<link rel="stylesheet" href="https://formden.com/static/cdn/font-awesome/4.4.0/css/font-awesome.min.css" />
+
+	<!-- Inline CSS based on choices in "Settings" tab -->
+	<style>.bootstrap-iso .formden_header h2, .bootstrap-iso .formden_header p, .bootstrap-iso form{font-family: Arial, Helvetica, sans-serif; color: black}.bootstrap-iso form button, .bootstrap-iso form button:hover{color: white !important;} .asteriskField{color: red;}</style>
+	<script src="https://cdn.jsdelivr.net/npm/promise-polyfill@7/dist/polyfill.min.js"></script>
+	<script src="js/fetch-master/fetch.js"></script>
+	
+<style>
+.card 
+{
+    border-radius: 2px;
+    border-top: 4px solid #7386D5;
+    box-shadow: 0 2px 1px rgba(0, 0, 0, 0.05);
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    margin-bottom: 30px;
+    background: #fff;
+}
+.card-header
+{
+    display: block;
+    color: #444;
+    font-size: 16px;
+    font-weight: 600;
+	padding-bottom : 20px;
+}
+.table
+{
+	border-top: 1px solid rgb(236, 238, 239);
+}
+
+.card-header
+{
+	margin : 10px;
+}
+
+.yellow
+{
+	border-top: 4px solid #ffcc00;
+}
+
+.black
+{
+	border-top: 4px solid #F0F8FF;
+}
+
+.bootstrap-select.form-control:not([class*=col-])
+{
+	width : auto;
+}
+
+th
+{
+	cursor: pointer;
+}
+</style>
+<script>
+var sort;
+function fetchOrder(order)
+{
+	changeSort();
+	fetch('http://w.kcfeed.co.kr/admin/ajax/totalSearch.php?order='+order+"&sort="+sort).then(function(response){
+		return response.text();
+	}).then(function(j){
+		  document.querySelector('tbody').innerHTML = j;
+		});
+}
+
+function changeSort()
+{
+	if(sort == "ASC")
+	{
+		sort = "DESC";
+	}
+	else
+	{
+		sort = "ASC"
+	}
+}
+</script>
+</head>
+    <body>
+        <div class="wrapper">
+            <!-- Sidebar Holder -->
+				<? include "inc/nav.html"; ?>
+            <!-- Page Content Holder -->
+            <div id="content">
+
+				<div class="row">
+					<div class="col-md-12">
+						<nav class="navbar navbar-default">
+							<? include "inc/nav3.html" ?>
+						</nav>
+					</div>
+				</div>
+
+				<div class="row">
+					<div class="col-lg-12">
+						<div class="card">
+						<div class="card-header">
+							통합검색
+						</div>
+						<div class="card-body">
+						<table class="table table-striped table-hover">
+						  <thead>
+							<tr>
+							  <th scope="col" onclick="fetchOrder('seq');">#</th>
+							  <th scope="col" onclick="fetchOrder('locationGubun');">지점구분</th>
+							  <th scope="col" onclick="fetchOrder('departmentName');">부서명</th>
+							  <th scope="col" onclick="fetchOrder('employeeName');">사용자</th>
+							  <th scope="col" onclick="fetchOrder('locationName');">상세위치</th>
+							  <th scope="col" onclick="fetchOrder('os');">OS</th>
+							  <th scope="col" onclick="fetchOrder('cpu');">CPU</th>
+							  <th scope="col" onclick="fetchOrder('memory');">MEMORY</th>
+							  <th scope="col" onclick="fetchOrder('storeType');">용량</th>
+							  <th scope="col" onclick="fetchOrder('ip');">ip</th>
+							  <th scope="col" >소프트웨어명</th>
+							  <th scope="col" >소프트웨어 고유번호</th>
+							</tr>
+						  </thead>
+						  <tbody>
+							<?=$computerInfo?>
+						  </tbody>
+						</table>
+						</div>
+						</div>
+					</div>
+				</div>
+            </div>
+        </div>
+
+
+
+
+        <!-- jQuery CDN -->
+         <script src="https://code.jquery.com/jquery-1.12.0.min.js"></script>
+         <!-- Bootstrap Js CDN -->
+         <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+         <script type="text/javascript">
+             $(document).ready(function () {
+                 $('#sidebarCollapse').on('click', function () {
+                     $('#sidebar').toggleClass('active');
+                 });
+             });
+         </script>
+		 
+		 <!-- Include Date Range Picker -->
+		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.4.1/js/bootstrap-datepicker.min.js"></script>
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.4.1/css/bootstrap-datepicker3.css"/>
+
+		<script>
+			$(document).ready(function(){
+				var date_input=$('input[name="date"]'); //our date input has the name "date"
+				var container=$('.bootstrap-iso form').length>0 ? $('.bootstrap-iso form').parent() : "body";
+				date_input.datepicker({
+					format: 'yyyy-mm-dd',
+					container: container,
+					todayHighlight: true,
+					autoclose: true,
+				})
+			})
+		</script>
+		
+    </body>
+</html>

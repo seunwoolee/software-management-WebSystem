@@ -1,0 +1,643 @@
+<?
+require_once "inc/config.php"; 
+require_once "inc/mysql.inc.php"; 
+require_once "inc/paging.inc.php"; 
+require_once "inc/lib.inc.php"; 
+require_once "inc/gita.inc.php"; 
+include "inc/session.php";
+
+
+$db = new Mysql();
+$pg = new Paging(20, 10);
+$gita = new Gita($db); 
+
+$pageNum = $_GET["pageNum"];
+$type = $_GET["searchType"];
+$department = $_GET["searchDepartment"];
+$owner = $_GET["searchOwner"];
+$locationGubun = $_GET["searchLocationGubun"];
+$findkey = $_GET["findkey"];
+
+if(empty($type) == false)
+{
+	$gita->where .= " AND type = '". $type. "' ";
+}
+
+if(empty($department) == false)
+{
+	$gita->where .= " AND departmentSeq = '". $department. "' ";
+}
+
+if(empty($owner) == false)
+{
+	$gita->where .= " AND employeeSeq = '". $owner. "' ";
+}
+
+if(empty($locationGubun) == false)
+{
+	$gita->where .= " AND locationGubun = '".$locationGubun."'";
+}
+
+
+if(empty($findkey) == false)
+{
+	$gita->where .= " AND (networkName LIKE '%". $findkey. "%' OR ip LIKE '%". $findkey. "%' OR bigo LIKE '%". $findkey. "%') ";
+}
+
+$computerInfo = $gita->getComputer();
+?>
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+	<title>컴퓨터 관리</title>
+
+	 <!-- Bootstrap CSS CDN -->
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+	<!-- Bootstrap Dropdown select -->
+	<link rel="stylesheet" href="css/bootstrap-select.min.css">
+	<script src="css/bootstrap-select.min.js"></script>
+	<script src="css/bootstrap-select.js" defer></script>
+	<!-- Our Custom CSS -->
+	<link rel="stylesheet" href="css/style.css" />
+	
+	<!--formden.js communicates with FormDen server to validate fields and submit via AJAX -->
+	<script type="text/javascript" src="https://formden.com/static/cdn/formden.js"></script>
+
+	<!-- Special version of Bootstrap that is isolated to content wrapped in .bootstrap-iso -->
+	<link rel="stylesheet" href="https://formden.com/static/cdn/bootstrap-iso.css" />
+
+	<!--Font Awesome (added because you use icons in your prepend/append)-->
+	<link rel="stylesheet" href="https://formden.com/static/cdn/font-awesome/4.4.0/css/font-awesome.min.css" />
+
+	<!-- Inline CSS based on choices in "Settings" tab -->
+	<style>.bootstrap-iso .formden_header h2, .bootstrap-iso .formden_header p, .bootstrap-iso form{font-family: Arial, Helvetica, sans-serif; color: black}.bootstrap-iso form button, .bootstrap-iso form button:hover{color: white !important;} .asteriskField{color: red;}</style>
+
+<style>
+.card 
+{
+    border-radius: 2px;
+    border-top: 4px solid #7386D5;
+    box-shadow: 0 2px 1px rgba(0, 0, 0, 0.05);
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    margin-bottom: 30px;
+    background: #fff;
+}
+.card-header
+{
+    display: block;
+    color: #444;
+    font-size: 16px;
+    font-weight: 600;
+	padding-bottom : 20px;
+}
+.table
+{
+	border-top: 1px solid rgb(236, 238, 239);
+}
+
+.card-header
+{
+	margin : 10px;
+}
+
+.yellow
+{
+	border-top: 4px solid #ffcc00;
+}
+
+.black
+{
+	border-top: 4px solid #F0F8FF;
+}
+
+.bootstrap-select.form-control:not([class*=col-])
+{
+	width : auto;
+}
+</style>
+<script>
+var globalOwner;
+function remove(seq) 
+{
+	if(confirm("정말 삭제 하시겠습니까?")) 
+	{
+		$("#seq").val(seq);
+		$("#mode").val("remove");
+		submitForm.submit();
+	} else 
+	{
+		location.reload();
+	}
+}
+
+function save() 
+{
+	
+	if($("#type").val() == 0) 
+	{
+		alert("타입을 입력해주세요");
+		return;
+	};
+
+	if($("#departmentSeq").val() == 0) 
+	{
+		alert("부서를 입력해주세요");
+		return;
+	};
+		
+
+	if($("#owner").val() == 0) 
+	{
+		alert("소유자를 입력해주세요");
+		return;
+	};
+
+	
+	if($("#state").val() == 0) 
+	{
+		alert("사용여부를 입력해 주세요");
+		return;
+	};
+	
+	var str = $("#bigo").val();
+	str = str.replace(/(?:\r\n|\r|\n)/g, '<br/>');
+	$("#bigo").val(str);
+	
+	submitForm.submit();
+}
+
+function modify(seq,type,departmentSeq,owner,locationGubun,locationName,networkName,modelName,productKey,date,productCompany,os,storeType,ip,state,bigo) 
+{
+	$("#myModalLabel").html("전산기기 수정");
+	$("#seq").val(seq);
+	$("#mode").val("modify");
+	$("#type").val(type);
+	$("#departmentSeq").val(departmentSeq);
+	$("#owner").val(owner);
+	globalOwner = owner;
+	$("#locationGubun").val(locationGubun);
+	$("#locationName").val(locationName);
+	$("#networkName").val(networkName);
+	$("#modelName").val(modelName);
+	$("#productKey").val(productKey);
+	$("#date").val(date);
+	$("#productCompany").val(productCompany);
+	$("#os").val(os);
+	$("#storeType").val(storeType);
+	$("#ip").val(ip);
+	$("#state").val(state);
+	bigo = bigo.split('<br/>').join("\r\n");
+	$('#bigo').val(bigo);
+	getOwner();
+	$("#myModal").modal();
+}
+
+function add() 
+{
+	$("#myModalLabel").html("전산기기 추가");
+	$("#mode").val("add");
+	$("#type").val("0");
+	$("#departmentSeq").val("0");
+	$("#owner").html("<option value='0'>소유자를 선택해주세요</option>");
+	$("#location").val("0");
+	$("#networkName").val("");
+	$("#modelName").val("");
+	$("#productKey").val("");
+	$("#date").val("");
+	$("#productCompany").val("");
+	$("#os").val("0");
+	$("#storeType").val("0");
+	$("#ip").val("");
+	$("#state").val("0");
+	$("#bigo").val("");
+	$("#myModal").modal();
+}
+
+function listPaging(pageNum)
+{
+	search(pageNum);
+}
+
+function search(pageNum)
+{
+	if(typeof pageNum === "undefined")
+	{
+		pageNum = 1;
+	}
+	
+	var searchType = $("#searchType").val();
+	var searchDepartment = $("#searchDepartment").val();
+	var searchOwner = $("#searchOwner").val();
+	var searchLocationGubun = $("#searchLocationGubun").val();
+	var findkey = $("#findkey").val();
+	
+	window.location.href = "gita.html?searchType=" + searchType + "&searchDepartment=" + searchDepartment + "&searchOwner=" + searchOwner + "&searchLocationGubun=" + searchLocationGubun + "&findkey="+ findkey + "&pageNum=" + pageNum;
+}
+
+function getOwner()
+{
+	departmentSeq = $("#departmentSeq").val();
+	
+	$.ajax
+	({
+		type : "POST"
+		,url : "../admin/ajax/getOwner.php"
+		,async : false		
+		,data : {"departmentSeq":departmentSeq}
+		,dataType : "json"
+		,success : function(data)
+		{
+			if(data.list == null)
+			{
+				alert("해당부서에 유저가 없습니다.");
+			}
+			else
+			{
+				displayOnwer(data.list);
+			}
+		}
+		,error: function( xhr, status ) 
+		{
+			 console.log(xhr.status)
+		}
+		,complete : function()
+		{
+
+		}
+	});
+}
+
+
+function displayOnwer(list)
+{
+	$("#owner").html("");
+	for(var i=0; i<list.length;i++)
+	{
+		if(globalOwner == list[i]["seq"])
+		{
+			var result = "<option value = "+ list[i]["seq"]  +" selected >"+ list[i]["name"] + "</option>\n";		
+		}
+		else
+		{
+			var result = "<option value = "+ list[i]["seq"]  +" >"+ list[i]["name"] + "</option>\n";
+		}
+		console.log(result)
+		$("#owner").append(result);
+	}
+}
+
+function locationGubun()
+{
+	var locationGubun = '<?=$locationGubun?>';
+
+	if(locationGubun !== '')
+	{
+		$("#searchLocationGubun").val(locationGubun);
+	}
+	
+
+}
+</script>
+</head>
+    <body onload="locationGubun()">
+        <div class="wrapper">
+            <!-- Sidebar Holder -->
+				<? include "inc/nav.html"; ?>
+            <!-- Page Content Holder -->
+            <div id="content">
+
+                <nav class="navbar navbar-default">
+					<? include "inc/nav3.html" ?>
+                </nav>
+
+				<div class="row">
+					<div class="col-md-12">
+						<div class="card black">
+							<div class="card-header">
+								<div class="form-inline">
+								  <div class="form-group">
+										<select id="searchType" name="searchType" class="form-control" onchange="search()">
+											<option value="0">타입</option>
+											<?=$gita->getTypeSelectBoxOptions($type)?>
+										</select>
+										<select id="searchDepartment" name="searchDepartment" class="form-control" style="width:120px;" onchange="search()">
+											<option value="0">부서</option>
+											<?=$gita->getDepartmentSelectBoxOptions($department)?>
+										</select>
+										<select id="searchLocationGubun" name="searchLocationGubun" class="form-control" style="width:120px;" onchange="search()" >
+											<option value="0">위치</option>
+											<option value="본사">본사</option>
+											<option value="식품사업부">식품사업부</option>
+											<option value="대구사무소">대구사무소</option>
+											<option value="서울사무소">서울사무소</option>
+											<option value="함안사무소">함안사무소</option>
+											<option value="김천사무소">김천사무소</option>
+											<option value="자택">자택</option>
+											<option value="직매소">직매소</option>
+										</select>
+										<select id="searchOwner" name="searchOwner" class="selectpicker show-tick form-control" data-live-search="true" style="width:120px;" onchange="search()">
+											<option value="0">사용자</option>
+											<?=$gita->getOwnerSelectBoxOptions($owner)?>
+										</select>
+										<div class="form-group">
+											<input type="text" class="form-control" name="findkey" id="findkey" onkeypress="if(event.keyCode == 13) search()" placeholder="사용자이름 , 비고 검색" />
+										</div>
+									</div>
+								  <button  class="btn btn-default" onclick="search()">검색</button>
+
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-md-12">
+						<div class="card">
+						<div class="card-header">
+							컴퓨터 관리
+						<button type="button" class="btn btn-primary pull-right" onclick='add();'>추가</button>
+						</div>
+						<div class="card-body">
+						<table class="table table-striped table-hover">
+						  <thead>
+							<tr>
+							  <th scope="col">#</th>
+							  <th scope="col">타입</th>
+							  <th scope="col">사용여부</th>
+							  <th scope="col">부서</th>
+							  <th scope="col">사용자이름</th>
+							  <th scope="col">네트워크명</th>
+							  <th scope="col">ip</th>
+							  <th scope="col">Handle</th>
+							</tr>
+						  </thead>
+						  <tbody>
+							<?=$computerInfo?>
+						  </tbody>
+						</table>
+						</div>
+						</div>
+					</div>
+				</div>
+				<!-- <ul class="pagination" style=float:right;> -->
+				<!-- <?=$pg->getPages()?> -->
+				<!-- </ul> -->
+            </div>
+        </div>
+		
+		
+				<!-- Modal -->
+				<form name="submitForm" method="post" action="../admin/post/computerPost.php">
+				<input type="hidden" name="mode" id="mode" value="">
+				<input type="hidden" name="seq" id="seq" value="">
+					<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+					  <div class="modal-dialog" role="document">
+						<div class="modal-content">
+						  <div class="modal-header">
+							<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+							<h4 class="modal-title" id="myModalLabel"></h4>
+						  </div>
+						    <div class="modal-body">
+							<label for="type"><span class="glyphicon glyphicon-check" aria-hidden="true"></span>타입 및 소유자</label>
+						  	<div class="form-inline">
+							<div class="form-group" style="width:100%">
+								<select id="type" name="type" class="form-control" style="width:32%">
+									<option value="0">타입을 선택해주세요</option>
+									<option value="서버">서버</option>
+									<option value="공유기">공유기</option>
+									<option value="프린트">프린트</option>
+									<option value="touchPC">touchPC</option>
+									<option value="PLC">PLC</option>
+									<option value="복합기">복합기</option>
+									<option value="CCTV">CCTV</option>
+									<option value="NAS">NAS</option>
+									<option value="지문인식">지문인식</option>
+								</select>
+								<select id="departmentSeq" name="departmentSeq" class="form-control " Onblur="getOwner();" style="width:33%">
+									<option value="0">부서를 선택해 주세요</option>
+									<?=$gita->getDepartmentSelectBoxOptions()?>
+								</select>
+								<select id="owner" name="owner" class="form-control" style="width:33%">
+								</select>
+							</div>
+							</div>
+							<label for="locationGubun">위치</label>
+						  	<div class="form-inline">
+							<div class="form-group" style="width:100%">
+							<select id="locationGubun" name="locationGubun" class="form-control" style="width:49%">
+								<option value="0">위치를 선택해주세요</option>
+								<option value="본사">본사</option>
+								<option value="식품사업부">식품사업부</option>
+								<option value="대구사무소">대구사무소</option>
+								<option value="서울사무소">서울사무소</option>
+								<option value="함안사무소">함안사무소</option>
+								<option value="김천사무소">김천사무소</option>
+								<option value="자택">자택</option>
+								<option value="직매소">직매소</option>
+							</select>
+							<input name="locationName" type="text" list="locationNameList"  class="form-control" id="locationName" placeholder="상세위치 입력" style="width:50%"/>
+							<datalist id="locationNameList">
+							  <?=$locationName?>
+							</datalist>	
+							</div>
+							</div>
+							<label for="networkName">네트워크 및 모델 명</label>
+						  	<div class="form-inline">
+							<div class="form-group" style="width:100%">			
+								<input name="networkName" type="text" class="form-control" id="networkName" style="width:49%" placeholder="네트워크명" />
+								<input name="modelName" type="text" class="form-control" id="modelName" style="width:50%" placeholder="모델명" />
+							</div>
+							</div>
+							<label for="productKey">시리얼 키 및 제조회사</label>
+						  	<div class="form-inline">
+							<div class="form-group" style="width:100%">
+								<input name="productKey" type="text" class="form-control" id="productKey" style="width:49%" placeholder="시리얼키" />
+								<input name="productCompany" list="productCompanyList" type="text" class="form-control" id="productCompany" style="width:49%" placeholder="제조회사" />
+							</div>
+							</div>
+							<label for="productKey">구매일자</label>
+							<div class="input-group">
+								<div class="input-group-addon">
+								<i class="fa fa-calendar">
+								</i>
+								</div>
+								<input class="form-control" id="date" name="date" placeholder="YYYY/MM/DD" type="text" />
+							</div>
+							<datalist id="productCompanyList">
+							  <option>삼성</option>
+							  <option>LG</option>
+							  <option>대우</option>
+							  <option>조립</option>
+							</datalist>
+							<label for="os">운영체제 , 저장공간 , IP </label>
+							<div class="form-inline">
+							<div class="form-group" style="width:100%">
+								<select id="os" name="os" class="form-control" style="width:32%">
+									<option value="0">운영체제 선택</option>
+									<option value="windows7">windows7</option>
+									<option value="windows8">windows8</option>
+									<option value="windows10">windows10</option>
+									<option value="windowsXP">windowsXP</option>
+									<option value="windowsXP미만">windowsXP미만</option>
+								</select>
+								<select id="storeType" name="storeType" class="form-control" style="width:33%">
+									<option value="0">저장공간 선택</option>
+									<option value="HDD">HDD</option>
+									<option value="SSD">SSD</option>
+									<option value="HDD+SSD">HDD+SSD</option>
+								</select>
+								<input type="text" name="ip" id="ip" class="form-control" style="width:33%" placeholder="ip입력" />
+							</div>
+							</div>
+							<label for="state"><span class="glyphicon glyphicon-check" aria-hidden="true"></span>사용여부</label>
+							<select id="state" name="state" class="form-control">
+								<option value="0">사용여부를 선택해주세요</option>
+								<option value="사용">사용</option>
+								<option value="미사용">미사용</option>
+							</select>
+							<div class="form-group">
+								<label for="bigo">비고:</label>
+								<textarea name="bigo" class="form-control" rows="5" id="bigo"></textarea>
+							</div>
+						  </div>
+						  <!-- <div class="modal-body"> -->
+							<!-- <label for="type"><span class="glyphicon glyphicon-check" aria-hidden="true"></span>타입</label> -->
+						  	<!-- <select id="type" name="type" class="form-control"> -->
+								<!-- <option value="0">타입을 선택해주세요</option> -->
+								<!-- <option value="서버">서버</option> -->
+								<!-- <option value="공유기">공유기</option> -->
+								<!-- <option value="프린트">프린트</option> -->
+								<!-- <option value="touchPC">touchPC</option> -->
+								<!-- <option value="PLC">PLC</option> -->
+								<!-- <option value="복합기">복합기</option> -->
+								<!-- <option value="CCTV">CCTV</option> -->
+								<!-- <option value="NAS">NAS</option> -->
+								<!-- <option value="지문인식">지문인식</option> -->
+							<!-- </select> -->
+							<!-- <label for="departmentSeq"><span class="glyphicon glyphicon-check" aria-hidden="true"></span>부서</label> -->
+							<!-- <select id="departmentSeq" name="departmentSeq" class="form-control " Onblur="getOwner();"> -->
+								<!-- <option value="0">부서를 선택해 주세요</option> -->
+								<!-- <?=$gita->getDepartmentSelectBoxOptions()?> -->
+							<!-- </select> -->
+							<!-- <label for="owner"><span class="glyphicon glyphicon-check" aria-hidden="true"></span>소유자</label> -->
+							<!-- <select id="owner" name="owner" class="form-control"> -->
+							<!-- </select> -->
+							<!-- <label for="locationGubun">위치구분</label> -->
+							<!-- <select id="locationGubun" name="locationGubun" class="form-control"> -->
+								<!-- <option value="0">위치를 선택해주세요</option> -->
+								<!-- <option value="본사">본사</option> -->
+								<!-- <option value="식품사업부">식품사업부</option> -->
+								<!-- <option value="대구사무소">대구사무소</option> -->
+								<!-- <option value="서울사무소">서울사무소</option> -->
+								<!-- <option value="함안사무소">함안사무소</option> -->
+								<!-- <option value="김천사무소">김천사무소</option> -->
+								<!-- <option value="자택">자택</option> -->
+								<!-- <option value="직매소">직매소</option> -->
+							<!-- </select> -->
+							<!-- <label for="locationName">상세위치</label> -->
+							<!-- <input name="locationName" type="text" list="locationNameList"  class="form-control" id="locationName" /> -->
+							<!-- <datalist id="locationNameList"> -->
+							  <!-- <?=$locationName?> -->
+							<!-- </datalist>						 -->
+							<!-- <label for="networkName">네트워크명</label> -->
+							<!-- <input name="networkName" type="text" class="form-control" id="networkName" > -->
+							<!-- <label for="modelName">모델명</label> -->
+							<!-- <input name="modelName" type="text" class="form-control" id="modelName" > -->
+							<!-- <label for="productKey">시리얼 키</label> -->
+							<!-- <input name="productKey" type="text" class="form-control" id="productKey" > -->
+							
+							<!-- <label for="date">구매일자</label> -->
+							<!-- <div class="input-group"> -->
+								<!-- <div class="input-group-addon"> -->
+								<!-- <i class="fa fa-calendar"> -->
+								<!-- </i> -->
+								<!-- </div> -->
+								<!-- <input class="form-control" id="date" name="date" placeholder="YYYY/MM/DD" type="text"/> -->
+							<!-- </div> -->
+							<!-- <label for="productCompany">제조회사</label> -->
+							<!-- <input name="productCompany" list="productCompanyList" type="text" class="form-control" id="productCompany" placeholder=""> -->
+							<!-- <datalist id="productCompanyList"> -->
+							  <!-- <option>삼성</option> -->
+							  <!-- <option>LG</option> -->
+							  <!-- <option>대우</option> -->
+							  <!-- <option>조립</option> -->
+							  <!-- <option>iptime</option>						   -->
+							<!-- </datalist> -->
+							<!-- <label for="os">운영체제</label> -->
+							<!-- <select id="os" name="os" class="form-control"> -->
+								<!-- <option value="0">운영체제를 선택해주세요</option> -->
+								<!-- <option value="windows7">windows7</option> -->
+								<!-- <option value="windows8">windows8</option> -->
+								<!-- <option value="windows10">windows10</option> -->
+								<!-- <option value="windowsXP">windowsXP</option> -->
+								<!-- <option value="windowsXP미만">windowsXP미만</option> -->
+							<!-- </select> -->
+							<!-- <label for="storeType">저장공간</label> -->
+							<!-- <select id="storeType" name="storeType" class="form-control"> -->
+								<!-- <option value="0">저장공간을 선택해주세요</option> -->
+								<!-- <option value="HDD">HDD</option> -->
+								<!-- <option value="SSD">SSD</option> -->
+								<!-- <option value="HDD+SSD">HDD+SSD</option> -->
+							<!-- </select> -->
+							<!-- <label for="ip">ip</label> -->
+							<!-- <input type="text" name="ip" id="ip" class="form-control"/ > -->
+							<!-- <label for="state"><span class="glyphicon glyphicon-check" aria-hidden="true"></span>사용여부</label> -->
+							<!-- <select id="state" name="state" class="form-control"> -->
+								<!-- <option value="0">사용여부를 선택해주세요</option> -->
+								<!-- <option value="사용">사용</option> -->
+								<!-- <option value="미사용">미사용</option> -->
+							<!-- </select> -->
+							<!-- <div class="form-group"> -->
+								<!-- <label for="bigo">비고:</label> -->
+								<!-- <textarea name="bigo" class="form-control" rows="5" id="bigo"></textarea> -->
+							<!-- </div> -->
+						  <!-- </div> -->
+
+						  <div class="modal-footer">
+							<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+							<button type="button" class="btn btn-primary" onclick="save();">Save changes</button>
+						  </div>
+						</div>
+					  </div>
+					</div>
+				</form>
+
+
+
+
+        <!-- jQuery CDN -->
+         <script src="https://code.jquery.com/jquery-1.12.0.min.js"></script>
+         <!-- Bootstrap Js CDN -->
+         <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+         <script type="text/javascript">
+             $(document).ready(function () {
+                 $('#sidebarCollapse').on('click', function () {
+                     $('#sidebar').toggleClass('active');
+                 });
+             });
+         </script>
+		 
+		 <!-- Include Date Range Picker -->
+		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.4.1/js/bootstrap-datepicker.min.js"></script>
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.4.1/css/bootstrap-datepicker3.css"/>
+
+		<script>
+			$(document).ready(function(){
+				var date_input=$('input[name="date"]'); //our date input has the name "date"
+				var container=$('.bootstrap-iso form').length>0 ? $('.bootstrap-iso form').parent() : "body";
+				date_input.datepicker({
+					format: 'yyyy-mm-dd',
+					container: container,
+					todayHighlight: true,
+					autoclose: true,
+				})
+			})
+		</script>
+		
+    </body>
+</html>

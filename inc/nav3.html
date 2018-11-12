@@ -1,0 +1,119 @@
+<? include "../admin/inc/login.inc.php";  
+$login = new Login($db); 
+?>
+<script>
+function logout() 
+{
+	$.ajax
+	({
+		type : "POST"
+		,url : "../../admin/ajax/logout.php"
+		,async : false		
+		,success : function(data)
+		{
+			alert('로그아웃 완료');
+			document.location.href="index.html";
+			
+		}
+		,error: function( xhr, status ) 
+		{
+			 console.log(xhr.status)
+		}
+		,complete : function()
+		{
+		}
+	});
+}
+
+function modifyPassword() 
+{
+	$("#mode").val("modify");
+	$("#infoModal2").modal();
+}
+
+function saveEmployeeInfo() 
+{
+	if(checkPassword())
+	{
+		submitForm1.submit();
+	}
+}
+
+function checkPassword()
+{
+	<!-- var pw = str; -->
+	var pw = $("#newPassword").val();
+	var num = pw.search(/[0-9]/g);
+	var eng = pw.search(/[a-z]/ig);
+	var spe = pw.search(/[`~!@@#$%^&*|₩₩₩'₩";:₩/?]/gi);
+	 
+	if(pw.length < 8 || pw.length > 20)
+	{
+		alert("8자리 ~ 20자리 이내로 입력해주세요.");
+		return false;
+	}
+
+	if(pw.search(/₩s/) != -1)
+	{
+		alert("비밀번호는 공백없이 입력해주세요.");
+		return false;
+	} 
+
+	if(num < 0 || eng < 0 || spe < 0 )
+	{
+		alert("영문,숫자, 특수문자를 혼합하여 입력해주세요.");
+		return false;
+	}
+	 
+	return true;
+}
+
+</script>                    
+	<div class="navbar-header">
+		<button type="button" id="sidebarCollapse" class="btn btn-info navbar-btn">
+			<i class="glyphicon glyphicon-align-left"></i>
+			<span>Toggle Sidebar</span>
+		</button>
+	</div>
+
+	<button type="button" id="logout" class="btn btn-primary navbar-btn" style="float:right;" onclick="logout();">
+		<span>Logout</span>
+	</button>
+	
+	<button type="button" id="logout" class="btn btn-primary navbar-btn" style="float:right;" onclick="modifyPassword();">
+		<span>개인정보 변경</span>
+	</button>
+
+<!-- Modal -->
+<form name="submitForm1" method="post" action="../admin/post/loginPost.php">
+<input type="hidden" name="seq1" id="seq1" value="<?=$_SESSION["seq"]?>" />
+	<div class="modal fade" id="infoModal2" tabindex="-1" role="dialog" aria-labelledby="infoModal">
+	  <div class="modal-dialog" role="document">
+		<div class="modal-content">
+		  <div class="modal-header">
+			<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+			<h4 class="modal-title" id="infoModal">개인정보변경</h4>
+		  </div>
+		  <div class="modal-body">
+			<label for="name1">이름</label>
+			<input name="name1" type="text" class="form-control" id="name1" value="<?=$_SESSION["name"]?>">
+			<label for="employeeNumber1">사번</label>
+			<input name="employeeNumber1" type="text" class="form-control" id="employeeNumber1" value="<?=$_SESSION["employeeNumber"]?>" readonly>
+			<label for="departmentSeq">소속부서</label>
+			<select id="departmentSeq1" name="departmentSeq1" class="form-control">
+				<option value="0">부서를 선택해 주세요</option>
+				<?=$login->getDepartmentSelectBoxOptions($_SESSION["departmentSeq"])?>
+			</select>
+			<label for="currentPassword">현재 패스워드</label>
+			<input name="currentPassword" type="password" class="form-control" id="currentPassword" placeholder="현재 패스워드"/>
+			<label for="newPassword">신규 패스워드</label>
+			<input name="newPassword" type="password" class="form-control" id="newPassword" placeholder="변경할 패스워드"/>
+		  </div>
+		  <div class="modal-footer">
+			<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+			<button type="button" class="btn btn-primary" onclick="saveEmployeeInfo();">Save changes</button>
+		  </div>
+		</div>
+	  </div>
+	</div>
+</form>

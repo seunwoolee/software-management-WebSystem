@@ -1,0 +1,207 @@
+<?
+include "inc/config.php"; 
+include "inc/mysql.inc.php"; 
+include "inc/paging.inc.php"; 
+include "inc/lib.inc.php"; 
+include "inc/session.php";
+
+$db = new Mysql(); // 클래스를 쓰기 위해서 선언
+
+$db->que = " SELECT count(seq) FROM computer where type in ('노트북','데스크탑') ";
+$db->query();
+$totalComputerCount = $db->getOne();
+
+$db->que = " SELECT count(amount) FROM software ";
+$db->query();
+$totalSoftwareCount = $db->getOne();
+?>
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+	<title>소프트웨어 관리</title>
+
+	 <!-- Bootstrap CSS CDN -->
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
+	<!-- Our Custom CSS -->
+	<link rel="stylesheet" href="css/style.css" />
+<style>
+.card 
+{
+    border-radius: 2px;
+    border-top: 4px solid #7386D5;
+    box-shadow: 0 2px 1px rgba(0, 0, 0, 0.05);
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    margin-bottom: 30px;
+    background: #fff;
+}
+.card-header
+{
+    display: block;
+    color: #444;
+    font-size: 16px;
+    font-weight: 600;
+	padding-bottom : 20px;
+	text-align:right;
+}
+.table
+{
+	border-top: 1px solid rgb(236, 238, 239);
+}
+
+.card-header
+{
+	margin : 10px;
+}
+.black
+{
+	border-top: 4px solid #F0F8FF;
+}
+</style>
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<script type="text/javascript">
+  google.charts.load('visualization', {'packages':['bar']});
+  google.charts.setOnLoadCallback(drawChart);
+
+  function drawChart() {
+  	$.ajax
+	({
+		type : "POST"
+		,url : "../admin/ajax/getChartData.php"
+		,async : false		
+		,dataType : "json"
+		,success : function(json)
+		{
+			var data = new google.visualization.DataTable();
+				data.addColumn('string','software');
+				data.addColumn('number','총수량');
+				data.addColumn('number','사용');
+				data.addColumn('number','미사용');
+				data.addRows(json);
+				console.log(json);
+
+			var options = {
+			  chart: {
+				title: '소프트웨어 사용 그래프'
+				//subtitle: 'Sales, Expenses, and Profit: 2014-2017',
+			  },
+			  bars: 'horizontal' // Required for Material Bar Charts.
+			};
+			
+			var chart = new google.charts.Bar(document.getElementById('barchart_material'));
+
+			chart.draw(data, google.charts.Bar.convertOptions(options));
+
+		}
+		,error: function( xhr, status ) 
+		{
+			 console.log(xhr.status)
+		}
+		,complete : function()
+		{
+		
+		}
+	});
+  }
+</script>
+
+</head>
+    <body>
+        <div class="wrapper">
+            <!-- Sidebar Holder -->
+			
+			
+				<? include "inc/nav.html"; ?>
+				
+
+            <!-- Page Content Holder -->
+            <div id="content">
+
+				
+                <nav class="navbar navbar-default">
+				<div class="container">
+					<? include "inc/nav3.html" ?>
+				</div>
+                </nav>
+				
+			<div class="row">
+				<div class="col-xs-12 col-md-6">
+					<div class="card">
+					  <div class="card-header" >
+						<span>총 PC 대수(노트북 , 데스크탑)</span>
+					  </div>
+					  
+					  <div class="card-body" style="text-align:right;">
+						<h2 class="card-title"><?=$totalComputerCount?>대</h2>
+						<a href="computer.html" class="btn btn-primary">바로가기</a>
+					  </div>
+					</div>
+				</div>
+				<div class="col-xs-12 col-md-6">
+					<div class="card" style="text-align:right;">
+					  <div class="card-header">
+						<span>총 소프트웨어 개수</span>
+					  </div>
+					  <div class="card-body">
+						<h2 class="card-title"><?=$totalSoftwareCount?>개</h2>
+						<a href="software.html" class="btn btn-primary">바로가기</a>
+					  </div>
+					</div>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-xs-12">
+					<div id="barchart_material" style="height: 500px;"></div>
+				</div>
+			</div>
+			</div>
+        </div>
+				<!-- Modal -->
+				<form name="submitForm" method="post" action="../admin/post/departmentPost.php">
+				<input type="hidden" name="mode" id="mode" value="">
+				<input type="hidden" name="seq" id="seq" value="0">
+					<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+					  <div class="modal-dialog" role="document">
+						<div class="modal-content">
+						  <div class="modal-header">
+							<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+							<h4 class="modal-title" id="myModalLabel">부서 생성</h4>
+						  </div>
+						  <div class="modal-body">
+							<label for="departmentName">부서명</label>
+							<input name="departmentName" type="text" class="form-control" id="departmentName" placeholder="부서명">
+						  </div>
+						  <div class="modal-footer">
+							<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+							<button type="button" class="btn btn-primary" onclick="save();">Save changes</button>
+						  </div>
+						</div>
+					  </div>
+					</div>
+				</form>
+
+
+
+
+        <!-- jQuery CDN -->
+         <script src="https://code.jquery.com/jquery-1.12.0.min.js"></script>
+         <!-- Bootstrap Js CDN -->
+         <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+         <script type="text/javascript">
+             $(document).ready(function () {
+				 <!-- getChartData(); -->
+				 
+                 $('#sidebarCollapse').on('click', function () {
+                     $('#sidebar').toggleClass('active');
+                 });
+				 
+             });
+         </script>
+    </body>
+</html>
